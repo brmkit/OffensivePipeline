@@ -1,0 +1,56 @@
+name: "Build"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Build 
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+        
+    - name: Add local NuGet source
+      run: dotnet nuget add source ${{ github.workspace }}/ExternalResources --name DonutCore.1.0.1
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build project
+      run: dotnet build --configuration Release
+
+    - name: Publish project
+      run: dotnet publish --configuration Release --output ./publish
+    
+    - name: Zipping project
+      run: Compress-Archive -Path publish -DestinationPath OffPipeline
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      with:
+        tag_name:  release
+        release_name: Release OffPipeline 
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload Release
+      uses: actions/upload-release-asset@v1
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./OffPipeline.zip
+        asset_name: OffPipeline.zip
+        asset_content_type: application/zip
