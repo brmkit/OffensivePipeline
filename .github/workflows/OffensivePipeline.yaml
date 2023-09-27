@@ -34,6 +34,12 @@ jobs:
     - name: Zipping project
       run: Compress-Archive -Path publish/* -DestinationPath OffPipeline
 
+    - uses: dev-drprasad/delete-older-releases@v0.2
+      with:
+        keep_latest: 0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
